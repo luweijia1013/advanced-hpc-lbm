@@ -55,10 +55,13 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <omp.h>
 
 #define NSPEEDS         9
 #define FINALSTATEFILE  "final_state.dat"
 #define AVVELSFILE      "av_vels.dat"
+
+// export OMP_NUM_THREADS = 2
 
 /* struct to hold the parameter values */
 typedef struct
@@ -203,6 +206,7 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)
   /* modify the 2nd row of the grid */
   int jj = params.ny - 2;
 
+  #pragma omp parallel for num_threads(8)
   for (int ii = 0; ii < params.nx; ii++)
   {
     /* if the cell is not occupied and

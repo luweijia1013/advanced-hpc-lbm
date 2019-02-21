@@ -1,0 +1,2 @@
+#!/bin/bash
+scp -r . qi18235@bluecrystalp3.bris.ac.uk:~/hpc-lwj
