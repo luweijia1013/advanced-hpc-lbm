@@ -120,6 +120,7 @@ float calc_reynolds(const t_param params, t_speed* cells, int* obstacles);
 void die(const char* message, const int line, const char* file);
 void usage(const char* exe);
 
+double at=0,bt=0,ct=0,dt=0;
 /*
 ** main program:
 ** initialise, timestep loop, finalise
@@ -167,6 +168,9 @@ int main(int argc, char* argv[])
     printf("tot density: %.12E\n", total_density(params, cells));
 #endif
   }
+#ifdef DEBUG
+  printf("Four function cost:\naccelerate_flow:%.61f \npropagate%.61f \nrebound%.61f \ncollision%.61f\n",at,bt,ct,dt);
+#endif
 
   gettimeofday(&timstr, NULL);
   toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
@@ -190,10 +194,25 @@ int main(int argc, char* argv[])
 
 int timestep(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles)
 {
+  // struct timeval timstr;        /* structure to hold elapsed time */
+  // gettimeofday(&timstr, NULL);
+  // double t1 = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   accelerate_flow(params, cells, obstacles);
+  // gettimeofday(&timstr, NULL);
+  // double t2 = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   propagate(params, cells, tmp_cells);
+  // gettimeofday(&timstr, NULL);
+  // double t3 = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   rebound(params, cells, tmp_cells, obstacles);
+  // gettimeofday(&timstr, NULL);
+  // double t4 = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   collision(params, cells, tmp_cells, obstacles);
+  // gettimeofday(&timstr, NULL);
+  // double t5 = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
+  // at+=t2-t1;
+  // bt+= t3-t2;
+  // ct+= t4-t3;
+  // dt+= t5-t4;
   return EXIT_SUCCESS;
 }
 
@@ -206,7 +225,7 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)
   /* modify the 2nd row of the grid */
   int jj = params.ny - 2;
 
-  #pragma omp parallel for num_threads(8)
+  #pragma omp parallel for num_threads(4)
   for (int ii = 0; ii < params.nx; ii++)
   {
     /* if the cell is not occupied and
@@ -232,6 +251,7 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)
 
 int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 {
+  #pragma omp parallel for num_threads(4)
   /* loop over _all_ cells */
   for (int jj = 0; jj < params.ny; jj++)
   {
@@ -263,6 +283,7 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 
 int rebound(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles)
 {
+  #pragma omp parallel for num_threads(4)
   /* loop over the cells in the grid */
   for (int jj = 0; jj < params.ny; jj++)
   {
@@ -299,6 +320,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
   ** NB the collision step is called after
   ** the propagate step and so values of interest
   ** are in the scratch-space grid */
+  #pragma omp parallel for num_threads(4)
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
